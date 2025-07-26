@@ -1,3 +1,5 @@
+import os
+import groq
 # main.py
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -16,6 +18,12 @@ app = FastAPI(
     description="Backend service for the conversational AI agent.",
     version="1.0.0"
 )
+
+try:
+    groq_client = groq.Groq(api_key=os.environ.get("GROQ_API_KEY"))
+except Exception as e:
+    print(f"Failed to initialize Groq client: {e}")
+    groq_client = None
 
 @app.post("/api/chat", response_model=schemas.ChatResponse)
 def chat_handler(request: schemas.ChatRequest, db: Session = Depends(get_db)):
@@ -50,9 +58,24 @@ def chat_handler(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # For now, we return a simple, hardcoded response.
-    ai_reply = "Your message has been received. I am not yet connected to my brain."
+    db_messages = db.query(models.Message).filter(models.Message.session_id == session_id).order_by(models.Message.timestamp.asc()).all()
     
-    # Save the AI's (hardcoded) response to the database
+    # 2. Format messages for the Groq API
+    conversation_history = [
+        {"role": msg.sender, "content": msg.content} for msg in db_messages
+    ]
+
+    # 3. Call the Groq LLM
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            messages=conversation_history,
+            model="llama3-8b-8192", # A fast and capable model
+        )
+        ai_reply = chat_completion.choices[0].message.content
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error communicating with LLM: {str(e)}")
+
+    # 4. Save the REAL AI response to the database
     ai_message = models.Message(
         session_id=session_id,
         sender="ai",
@@ -62,3 +85,6 @@ def chat_handler(request: schemas.ChatRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return schemas.ChatResponse(reply=ai_reply, session_id=session_id)
+   
+    # Save the AI's (hardcoded) response to the database
+   
