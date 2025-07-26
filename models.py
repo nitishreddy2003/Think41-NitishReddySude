@@ -2,7 +2,8 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .database import Base
+from database import Base
+
 
 class DistributionCenter(Base):
     __tablename__ = "distribution_centers"
