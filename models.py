@@ -41,6 +41,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True))
     traffic_source = Column(String(255))
     orders = relationship("Order", back_populates="user")
+    sessions = relationship("Session", back_populates="user")
 
 class Order(Base):
     __tablename__ = "orders"
@@ -74,3 +75,20 @@ class OrderItem(Base):
     inventory_item_id = Column(Integer, ForeignKey("inventory_items.id"))
     sale_price = Column(Float)
     order = relationship("Order", back_populates="items")
+
+class Session(Base):
+    __tablename__ = "sessions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user = relationship("User", back_populates="sessions")
+    messages = relationship("Message", back_populates="session")
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True)
+    session_id = Column(Integer, ForeignKey("sessions.id"))
+    sender = Column(String(50), nullable=False) # 'user' or 'ai'
+    content = Column(Text, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    session = relationship("Session", back_populates="messages")
