@@ -1,0 +1,16 @@
+# Secrets
+# Never commit your .env file!
+.env
+
+data/
+# Virtual Environment
+# This is specific to your machine and can be very large.
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# IDE/Editor configuration files
+.vscode/
+.idea/
